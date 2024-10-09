@@ -121,8 +121,72 @@ class Player(Object, sprite.Sprite):
 class Scene():  # Сцена 
     pass
 
-class Enemy(Object, sprite.Sprite): 
-    pass
+class EnemyFactory(): 
+    def create_enemy(self, enemy_type, x, y, damage, speed, patrol_route, image, size):
+        if enemy_type == 'A':
+            return EnemyTypeA(x, y, damage, speed, patrol_route, image, size)
+        else:
+            raise ValueError(f"Unknown enemy type: {enemy_type}")
+class EnemyTypeA(sprite.Sprite):
+    def __init__(self, x, y, damage, speed, patrol_route, enemy_image, size):
+        super().__init__()
+        self.original_image = transform.scale(image.load("player.png"), size)  #оригінальне незмінне фото (потрібно для обертання самого зображення)
+        self.image = self.original_image.copy()  
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.damage = damage
+        self.speed = speed
+        self.patrol_route = patrol_route  
+        self.current_target = 0
+        self.diraction = "up"
+
+    def reset(self):
+        window.blit(self.image, (self.rect.x, self.rect.y))
+
+    def rotate_image(self):
+        if self.diraction == "left":
+            self.image = transform.rotate(self.original_image, 90)
+        elif self.diraction == "right":
+            self.image = transform.rotate(self.original_image, -90)
+        elif self.diraction == "up":
+            self.image = self.original_image.copy() 
+        elif self.diraction == "down":
+            self.image = transform.rotate(self.original_image, 180)
+    
+        self.rect = self.image.get_rect(center=self.rect.center)
+
+    def move(self):
+        """Переміщення ворога по маршруту патруля."""
+        moving_ind = 0
+        for i in self.patrol_route:
+            target_x, target_y = self.patrol_route[self.current_target]
+
+            # хлдьба до поточної цили
+            if moving_ind == 1:
+                if self.rect.x == target_x:
+                    moving_ind = 0
+                if self.rect.x < target_x:
+                    self.rect.x += self.speed + 3
+                    self.diraction = "right"
+                elif self.rect.x > target_x:
+                    self.rect.x -= self.speed + 3
+                    self.diraction = "left"
+            if moving_ind == 0:
+                if self.rect.y == target_y:
+                    moving_ind = 1
+                if self.rect.y < target_y:
+                    self.rect.y += self.speed
+                    self.diraction = "down"
+                elif self.rect.y > target_y:
+                    self.rect.y -= self.speed 
+                    self.diraction = "up"
+
+            # Якщо досягли цілі, перемикаємось на наступну точку
+            if self.rect.x == target_x and self.rect.y == target_y:
+                self.current_target = (self.current_target + 1) % len(self.patrol_route)
+            self.rotate_image()
+            print(f"Enemy moved to ({self.rect.x}, {self.rect.y})")
 
 class Shoot():  # Класс для шмаляння
     pass
@@ -142,6 +206,10 @@ walls = sprite.Group()
 walls.add(wall1)
 walls.add(wall2)
 
+enemy_creator = EnemyFactory()
+enemy_type_A = EnemyTypeA(300, 400, 10, 1, [(2, 2), (10, 10), (2, 10)], "player.png", (50, 90))
+enemy1 = enemy_creator.create_enemy('A', 200, 600, 10, 1, [(200, 600), (200, 100), (1000, 100), (1000, 600)], "player.png", (50, 90))
+
 while game.game == True:
     for e in event.get():
         if e.type == QUIT:                    
@@ -152,5 +220,8 @@ while game.game == True:
     player.move(walls)
     wall1.reset()
     wall2.reset()
+    enemy1.reset()
+    enemy1.move()
+    
     
     game.update()
