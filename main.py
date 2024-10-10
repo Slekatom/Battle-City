@@ -24,6 +24,7 @@ class Game: # Клас гри в нього додаємо усі об'єкти 
         self.game = True
     def end(self):
         self.game = False
+
     def update(self):
         clock.tick(FPS)
         display.update()        
@@ -121,7 +122,31 @@ class Player(Enity, sprite.Sprite):
 class Scene():  # Сцена 
     pass
 
+class MovingStrategyA(Enity):
+    def move(self, enemy):
+        target_x, target_y, diraction = enemy.patrol_route[enemy.current_target]
 
+        # Рух по горизонталі
+        enemy.diraction = diraction
+        if enemy.rect.x < target_x:
+            enemy.rect.x += enemy.speed
+            
+        elif enemy.rect.x > target_x:
+            enemy.rect.x -= enemy.speed
+            
+
+        # Рух по вертикалі, тільки якщо x досяг цільового
+        if abs(enemy.rect.x - target_x) <= enemy.speed:
+            if enemy.rect.y < target_y:
+                enemy.rect.y += enemy.speed
+                
+            elif enemy.rect.y > target_y:
+                enemy.rect.y -= enemy.speed
+        enemy.rotate_image()
+       # print(self.rect.x, self.rect.y)
+    # Якщо досягнуто ціль, переходимо до наступної точки
+        if abs(enemy.rect.x - target_x) <= enemy.speed and abs(enemy.rect.y - target_y) <= enemy.speed:
+            enemy.current_target = (enemy.current_target + 1) % len(enemy.patrol_route)
 class EnemyTypeA(sprite.Sprite):
     def __init__(self, x, y, damage, speed, patrol_route, enemy_image, size):
         super().__init__()
@@ -140,7 +165,8 @@ class EnemyTypeA(sprite.Sprite):
 
     def reset(self):
         window.blit(self.image, (self.rect.x, self.rect.y))
-
+    def set_movement_strategy(self, strategy):
+        self.movement_strategy = strategy
     def rotate_image(self):
         if self.diraction == "left":
             self.image = transform.rotate(self.original_image, 90)
@@ -154,41 +180,17 @@ class EnemyTypeA(sprite.Sprite):
     
         #self.rect = self.image.get_rect(center=self.rect.center)
 
-    def move(self):
-        target_x, target_y, diraction = self.patrol_route[self.current_target]
-
-        # Рух по горизонталі
-        self.diraction = diraction
-        if self.rect.x < target_x:
-            self.rect.x += self.speed
-            
-        elif self.rect.x > target_x:
-            self.rect.x -= self.speed
-            
-
-        # Рух по вертикалі, тільки якщо x досяг цільового
-        if abs(self.rect.x - target_x) <= self.speed:
-            if self.rect.y < target_y:
-                self.rect.y += self.speed
-                
-            elif self.rect.y > target_y:
-                self.rect.y -= self.speed
-        self.rotate_image()
-        print(self.rect.x, self.rect.y)
-    # Якщо досягнуто ціль, переходимо до наступної точки
-        if abs(self.rect.x - target_x) <= self.speed and abs(self.rect.y - target_y) <= self.speed:
-            self.current_target = (self.current_target + 1) % len(self.patrol_route)
-            print("Я досяг цілі ", self.rect.x, self.rect.y)
-            
-        # Після руху оновлюємо зображення
+    def move(self, strategy):
+        if self.movement_strategy:
+            self.movement_strategy.move(self)
         
-        # Після руху оновлюємо зображення в залежності від напрямку
 
 class EnemyFactory(): 
-    def create_enemy(self, enemy_type, x, y, enemy: EnemyTypeA):
+    def create_enemy(self, enemy_type, x, y, patrol_route, enemy: EnemyTypeA):
         if enemy_type == 'A':
             enemy.rect.x = x
             enemy.rect.y = y
+            enemy.patrol_route = patrol_route
             return EnemyTypeA(enemy.rect.x, enemy.rect.y, enemy.damage, enemy.speed, enemy.patrol_route, enemy.enemy_image, enemy.size)
         else:
             raise ValueError(f"Unknown enemy type: {enemy_type}")
@@ -196,13 +198,19 @@ class EnemyFactory():
 class Shoot():  # Класс для шмаляння
     pass
 
-
+class Colision():
+    def check_tank_colision(self, player: Player, enemy_list, game: Game):
+        if sprite.spritecollide(player, enemy_list, False):
+            game.end()
+            return True
+        else:
+            return False
 game = Game(1, 2, 3, 4)
 game.start()
 
 game_back_ground = NotMoving("background.jpg", 0, 0, (1200, 700))
 
-player = Player(100, 100, 100, 0, 5, (50, 90))
+player = Player(1100, 600, 100, 0, 5, (50, 90))
 
 wall1 = NotMoving("wall.jpg", 200, 600, (50, 250))
 wall2 = NotMoving("wall.jpg", 0, 450, (300, 50))
@@ -227,12 +235,12 @@ walls.add(wall8)
 walls.add(wall9)
 walls.add(wall10)
 
-patrol_route = [
-    (100, 100, "up"),  # Початкова точка
-    (300, 100, "right"),  # Перша ціль (рух праворуч)
-    (300, 180, "down"),  # Друга ціль (рух вниз)
-    (800, 200, "right"),  # Третя ціль (рух ліворуч)
-    (800, 455, "down"),   # Повернення до початкової точки
+patrol_route1 = [
+    (100, 100, "up"),  
+    (300, 100, "right"),
+    (300, 180, "down"), 
+    (800, 200, "right"),
+    (800, 455, "down"), 
     (1000, 455, "right"), 
     (1000, 650, "down"), 
     (550, 650, "left"),
@@ -243,12 +251,52 @@ patrol_route = [
     (100, 300, "down") 
     
 ]
+patrol_route2 = [
+    (50, 600, "up"),  
+    (50, 500, "up"),
+    (350, 520, "right"), 
+    (350, 300, "up"),
+    (540, 300, "right"), 
+    (540, 630, "down"), 
+    (1100, 650, "right"), 
+    (1100, 450, "up"),
+    (850, 450, "left") ,
+    (800, 200, "up") ,
+    (350, 200, "left") ,
+    (350, 500, "down") ,
+    (50, 500, "left"),
+    (50, 600, "down") 
+    
+]
+patrol_route3 = [
+    (1100, 50, "down"),  
+    (1100, 250, "down"),
+    (800, 250, "left"), 
+    (800, 500, "down"),
+    (1100, 500, "right"), 
+    (1100, 630, "down"), 
+    (530, 630, "left"), 
+    (530, 300, "up"),
+    (280, 300, "left") ,
+    (280, 200, "up") ,
+    (1100, 200, "right") ,
+    (1100, 200, "up") ,
+    (1100, 50, "up") 
+    
+]
 enemy_creator = EnemyFactory()
-enemy_type_A = EnemyTypeA(100, 300, 4, 5, patrol_route , "player.png", (50, 90))
-enemy1 = enemy_creator.create_enemy('A', 100, 300, enemy_type_A)
-enemy2 = enemy_creator.create_enemy('A', 100, 100, enemy_type_A)
-
-
+enemy_type_A = EnemyTypeA(100, 300, 4, 5, patrol_route1, "player.png", (50, 90))
+enemy1 = enemy_creator.create_enemy('A', 100, 300, patrol_route1, enemy_type_A)
+enemy2 = enemy_creator.create_enemy('A', 50, 600, patrol_route2, enemy_type_A)
+enemy3 = enemy_creator.create_enemy('A', 1100, 50, patrol_route3, enemy_type_A)
+move_stratagy = MovingStrategyA()
+end_hammer = Colision()
+enemy1.set_movement_strategy(move_stratagy)
+enemy2.set_movement_strategy(move_stratagy)
+enemy3.set_movement_strategy(move_stratagy)
+enemies = sprite.Group()
+enemies.add(enemy1)
+enemies.add(enemy2)
 while game.game == True:
     for e in event.get():
         if e.type == QUIT:                    
@@ -269,9 +317,11 @@ while game.game == True:
     wall10.reset()
 
     enemy1.reset()
-    enemy1.move()
+    enemy1.move(move_stratagy)
     enemy2.reset()
-    enemy2.move()
+    enemy2.move(move_stratagy)
+    enemy3.reset()
+    enemy3.move(move_stratagy)
     
-    
+    end_hammer.check_tank_colision(player, enemies, game)
     game.update()
