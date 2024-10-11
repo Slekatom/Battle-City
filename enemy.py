@@ -35,8 +35,10 @@ class MovingStrategyA(Enity):
         if abs(enemy.rect.x - target_x) <= enemy.speed and abs(enemy.rect.y - target_y) <= enemy.speed:
             enemy.current_target = (enemy.current_target + 1) % len(enemy.patrol_route)
 class EnemyTypeA(sprite.Sprite):
-    def __init__(self, x, y, damage, speed, patrol_route, enemy_image, size):
+    def __init__(self, start_x, start_y, x, y, damage, speed, patrol_route, enemy_image, size):
         super().__init__()
+        self.start_x = start_x
+        self.start_y = start_y
         self.size = size
         self.enemy_image = enemy_image
         self.original_image = transform.scale(image.load("player.png"), self.size)  #оригінальне незмінне фото (потрібно для обертання самого зображення)
@@ -49,6 +51,7 @@ class EnemyTypeA(sprite.Sprite):
         self.patrol_route = patrol_route  
         self.current_target = 0
         self.diraction = "up"
+        self.size = size
 
     def reset(self):
         window.blit(self.image, (self.rect.x, self.rect.y))
@@ -70,14 +73,20 @@ class EnemyTypeA(sprite.Sprite):
     def move(self):
         if self.movement_strategy:
             self.movement_strategy.move(self)
+    def moved_home(self):
+        self.rect.x = self.start_x
+        self.rect.y = self.start_y
+        self.current_target = 0
         
 
 class EnemyFactory(): 
-    def create_enemy(self, enemy_type, x, y, patrol_route, enemy: EnemyTypeA):
+    def create_enemy(self, enemy_type, x, y, patrol_route, enemy: EnemyTypeA, start_x, start_y):
         if enemy_type == 'A':
+            enemy.start_x = start_x
+            enemy.start_y = start_y
             enemy.rect.x = x
             enemy.rect.y = y
             enemy.patrol_route = patrol_route
-            return EnemyTypeA(enemy.rect.x, enemy.rect.y, enemy.damage, enemy.speed, enemy.patrol_route, enemy.enemy_image, enemy.size)
+            return EnemyTypeA(start_x, start_y, enemy.rect.x, enemy.rect.y, enemy.damage, enemy.speed, enemy.patrol_route, enemy.enemy_image, enemy.size)
         else:
             raise ValueError(f"Unknown enemy type: {enemy_type}")
