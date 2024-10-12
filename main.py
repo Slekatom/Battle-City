@@ -13,7 +13,7 @@ FPS = 60
 
 mixer.init()
 mixer.music.load('War.mp3')
-mixer.music.set_volume(0)
+mixer.music.set_volume(0.1)
 mixer.music.play(0)
 
 class Game: # Клас гри в нього додаємо усі об'єкти класів (по типу контроллера)
@@ -23,6 +23,7 @@ class Game: # Клас гри в нього додаємо усі об'єкти 
         self.enemies = enemies
         self.map = map
         self.game = None
+        self.bullet_timer = 100
     def start(self):
         self.game = True
     def end(self):
@@ -35,6 +36,89 @@ class Game: # Клас гри в нього додаємо усі об'єкти 
             i.speed = 0
         for i in bullets_enemy:
             i.speed = 0
+    def mp3player(self, music):
+        mixer.init()
+        mixer.music.load(music)
+        mixer.music.set_volume(0.2)
+        mixer.music.play(1)
+    def player_shoot(self):
+        bullet = Shoot(player.rect.centerx, player.rect.centery, player.diraction)
+        bullets.add(bullet)
+        self.mp3player("bach.mp3")
+        
+    def reseting(self):
+        game_back_ground.reset()
+        
+        player.reset()
+        player.move(walls)
+        
+        # Draw walls
+        for wall in walls:
+            wall.reset()
+
+        # Move enemies
+        for i in enemies:
+            i.reset()
+            i.move()
+            if self.bullet_timer == 0:
+                bullet = Shoot(i.rect.centerx, i.rect.centery, i.diraction)
+                bullets_enemy.add(bullet)
+                self.bullet_timer = 100 
+            else:
+                self.bullet_timer -= 1
+        bullets.update()  # Move all bullets
+        bullets.draw(window)
+        bullets_enemy.update()  # Move all bullets
+        bullets_enemy.draw(window)
+        pause.reset()
+        menu_bar.reset()
+        continue_b.reset()  
+        replay.reset()
+        if e.type == MOUSEBUTTONDOWN:
+            x, y = e.pos
+            if pause.rect.collidepoint(x, y):
+                self.stop_all(player, enemies, bullets, bullets_enemy)
+                
+                menu_bar.rect.x = 700
+                menu_bar.rect.y = 0
+                continue_b.rect.x = 900
+                continue_b.rect.y = 500
+            if continue_b.rect.collidepoint(x, y):
+                self.stop_all(player, enemies, bullets, bullets_enemy)   
+                menu_bar.rect.x = 2000
+                menu_bar.rect.y = 0
+                continue_b.rect.x = 2000
+                continue_b.rect.y = 500
+                player.speed = 5
+                for i in enemies:
+                    i.speed = 2
+                for i in bullets:
+                    i.speed = 50
+                for i in bullets_enemy:
+                    i.speed = 50
+    def bullets_collision(self):
+        for bullet in bullets:
+            for enemy in enemies:
+                if bullet.rect.colliderect(enemy.rect):
+                    bullet.kill()
+                    player.add_score(100)                
+                    enemy.moved_home()  # Reset position or any other respawn logic
+                    enemy.speed += 0.25
+                    mixer.init()
+                    mixer.music.load('babach.mp3')
+                    mixer.music.set_volume(0.9)
+                    mixer.music.play(0)
+            for wall in walls:
+                if bullet.rect.colliderect(wall.rect):
+                    bullet.kill()
+
+        for bullet2 in bullets_enemy:  
+            for wall in walls:
+                if bullet2.rect.colliderect(wall.rect):
+                    bullet2.kill()
+        # Check for player-enemy collision
+        end_hammer.check_tank_colision(player, enemies, game)
+        end_hammer.check_tank_colision(player, bullets_enemy, game)   
     def update(self):
         clock.tick(FPS)
         display.update()        
@@ -130,7 +214,7 @@ class Scene():  # Сцена
 class Shoot(sprite.Sprite):
     def __init__(self, x, y, direction):
         super().__init__()
-        self.image = Surface((10, 5))
+        self.image = Surface((5, 5))
         self.image.fill((148, 98, 18))
         self.rect = self.image.get_rect(center=(x, y))
         self.speed = 50
@@ -152,13 +236,11 @@ class Shoot(sprite.Sprite):
             self.kill()
 
 class Colision():
-    def check_tank_colision(self, player: Player, enemy_list, game: Game):
-        if sprite.spritecollide(player, enemy_list, False):
-            #game.end()
+    def check_tank_colision(self, player: Player, target_list, game: Game):
+        if sprite.spritecollide(player, target_list, False):
             game.stop_all(player, enemies, bullets, bullets_enemy)
-            player.original_image = transform.scale(image.load("Buch.png"), (150, 200))
-            for bullet2 in bullets_enemy:  
-                bullet2.kill()
+            explosion = notmoving.Picture("Buch.png", player.rect.x, player.rect.y, (100, 150))
+            explosion.reset()
             for bullet in bullets:  
                 bullet.kill()
             return True
@@ -220,8 +302,11 @@ end_hammer = Colision()
 
 bullets = sprite.Group()
 bullets_enemy = sprite.Group()
-bullet_timer = 100
-# Inside the game loop
+
+pause = notmoving.Picture("pause.png", 1150, 0, (50, 50))
+continue_b = notmoving.Picture("cont.png", 2000, 0, (100, 100))
+replay = notmoving.Picture("retry.png", 2000, 0, (50, 50))
+menu_bar = notmoving.Picture("Menu_bar.png", 2000, 0, (500, 700))
 while game.game == True:
     for e in event.get():
         if e.type == QUIT:
@@ -229,64 +314,20 @@ while game.game == True:
 
         # Shooting mechanic: fires bullets when SPACE is pressed
         if e.type == KEYDOWN and e.key == K_SPACE:
-            bullet = Shoot(player.rect.centerx, player.rect.centery, player.diraction)
-            bullets.add(bullet) 
+            game.player_shoot()
             
     # Clear and redraw the background, player, walls, etc.
-    game_back_ground.reset()
-    player.reset()
-    player.move(walls)
+    game.reseting()
+    
+    
 
-    # Draw walls
-    for wall in walls:
-        wall.reset()
-
-    # Move enemies
-    for i in enemies:
-        i.reset()
-        i.move()
-        if bullet_timer == 0:
-            bullet = Shoot(i.rect.centerx, i.rect.centery, i.diraction)
-            bullets_enemy.add(bullet)
-            bullet_timer = 100 
-        else:
-            bullet_timer -= 1
-            
 
 
     # Update and draw bullets
-    bullets.update()  # Move all bullets
-    bullets.draw(window)
-    bullets_enemy.update()  # Move all bullets
-    bullets_enemy.draw(window)
-
+    
+    game.bullets_collision()
     # Check for collisions between bullets and enemies
-    for bullet in bullets:
-        for enemy in enemies:
-            if bullet.rect.colliderect(enemy.rect):
-                bullet.kill()
-                player.add_score(100)                
-                enemy.moved_home()  # Reset position or any other respawn logic
-                enemy.speed += 0.25
-        for wall in walls:
-            if bullet.rect.colliderect(wall.rect):
-                bullet.kill()
-
-    for bullet2 in bullets_enemy:  
-        for wall in walls:
-            if bullet2.rect.colliderect(wall.rect):
-                bullet2.kill()
-        if bullet2.rect.colliderect(player.rect):           
-            player.original_image = transform.scale(image.load("Buch.png"), (150, 200))
-            
-            for bullet2 in bullets_enemy:  
-                bullet2.kill()
-            for bullet in bullets:  
-                bullet.kill()
-            game.stop_all(player, enemies, bullets, bullets_enemy)
-            #game.end()
-    # Check for player-enemy collision
-    end_hammer.check_tank_colision(player, enemies, game)
+    
 
     # Update the game display
     game.update()

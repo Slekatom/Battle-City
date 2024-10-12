@@ -11,3 +11,12 @@ class NotMoving(sprite.Sprite):
         self.rect.y = y 
     def reset(self):
         window.blit(self.image, (self.rect.x, self.rect.y))
+class Picture(sprite.Sprite):
+    def __init__(self, images, x, y, size):
+        super().__init__()
+        self.sprite_image = transform.scale(image.load(images), size)    
+        self.rect = self.sprite_image.get_rect()
+        self.rect.x = x
+        self.rect.y = y 
+    def reset(self):
+        window.blit(self.sprite_image, (self.rect.x, self.rect.y))
