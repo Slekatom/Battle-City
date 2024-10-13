@@ -1,5 +1,6 @@
 from pygame import *
 from abc import ABC, abstractmethod
+import moving_strategies
 width = 1200
 height = 700
 window = display.set_mode((width, height))
@@ -8,32 +9,6 @@ class Enity(ABC): # Абстрактний клас забов'язує прил
     @abstractmethod 
     def move(self, x, y):
         pass
-
-class MovingStrategyA(Enity):
-    def move(self, enemy):
-        target_x, target_y, diraction = enemy.patrol_route[enemy.current_target]
-
-        # Рух по горизонталі
-        enemy.diraction = diraction
-        if enemy.rect.x < target_x:
-            enemy.rect.x += enemy.speed
-            
-        elif enemy.rect.x > target_x:
-            enemy.rect.x -= enemy.speed
-            
-
-        # Рух по вертикалі, тільки якщо x досяг цільового
-        if abs(enemy.rect.x - target_x) <= enemy.speed:
-            if enemy.rect.y < target_y:
-                enemy.rect.y += enemy.speed
-                
-            elif enemy.rect.y > target_y:
-                enemy.rect.y -= enemy.speed
-        enemy.rotate_image()
-       # print(self.rect.x, self.rect.y)
-    # Якщо досягнуто ціль, переходимо до наступної точки
-        if abs(enemy.rect.x - target_x) <= enemy.speed and abs(enemy.rect.y - target_y) <= enemy.speed:
-            enemy.current_target = (enemy.current_target + 1) % len(enemy.patrol_route)
 class EnemyTypeA(sprite.Sprite):
     def __init__(self, start_x, start_y, x, y, damage, speed, patrol_route, enemy_image, size):
         super().__init__()
@@ -41,7 +16,7 @@ class EnemyTypeA(sprite.Sprite):
         self.start_y = start_y
         self.size = size
         self.enemy_image = enemy_image
-        self.original_image = transform.scale(image.load("player.png"), self.size)  #оригінальне незмінне фото (потрібно для обертання самого зображення)
+        self.original_image = transform.scale(image.load("pictures_and_sounds/player.png"), self.size)  #оригінальне незмінне фото (потрібно для обертання самого зображення)
         self.image = self.original_image.copy()  
         self.rect = self.image.get_rect()
         self.rect.x = x
@@ -77,6 +52,7 @@ class EnemyTypeA(sprite.Sprite):
         self.rect.x = self.start_x
         self.rect.y = self.start_y
         self.current_target = 0
+
         
 
 class EnemyFactory(): 
