@@ -1,7 +1,7 @@
 from pygame import *
 width = 1200
 height = 700
-class Shoot(sprite.Sprite):
+class Bullet(sprite.Sprite):
     def __init__(self, x, y, direction):
         super().__init__()
         self.image = Surface((5, 5))

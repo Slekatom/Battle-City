@@ -1,15 +1,11 @@
 from pygame import *
-from abc import ABC, abstractmethod
-import moving_strategies
+import entity
 width = 1200
 height = 700
 window = display.set_mode((width, height))
 
-class Enity(ABC): # Абстрактний клас забов'язує прилеглі класи рухатися
-    @abstractmethod 
-    def move(self, x, y):
-        pass
-class EnemyTypeA(sprite.Sprite):
+
+class Enemy(sprite.Sprite, entity.Entity):
     def __init__(self, start_x, start_y, x, y, damage, speed, patrol_route, enemy_image, size):
         super().__init__()
         self.start_x = start_x
@@ -56,13 +52,13 @@ class EnemyTypeA(sprite.Sprite):
         
 
 class EnemyFactory(): 
-    def create_enemy(self, enemy_type, x, y, patrol_route, enemy: EnemyTypeA, start_x, start_y):
+    def create_enemy(self, enemy_type, x, y, patrol_route, enemytype: Enemy, start_x, start_y):
         if enemy_type == 'A':
-            enemy.start_x = start_x
-            enemy.start_y = start_y
-            enemy.rect.x = x
-            enemy.rect.y = y
-            enemy.patrol_route = patrol_route
-            return EnemyTypeA(start_x, start_y, enemy.rect.x, enemy.rect.y, enemy.damage, enemy.speed, enemy.patrol_route, enemy.enemy_image, enemy.size)
+            enemytype.start_x = start_x
+            enemytype.start_y = start_y
+            enemytype.rect.x = x
+            enemytype.rect.y = y
+            enemytype.patrol_route = patrol_route
+            return Enemy(start_x, start_y, enemytype.rect.x, enemytype.rect.y, enemytype.damage, enemytype.speed, enemytype.patrol_route, enemytype.enemy_image, enemytype.size)
         else:
             raise ValueError(f"Unknown enemy type: {enemy_type}")
