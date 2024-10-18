@@ -1,4 +1,5 @@
 from pygame import sprite
+import pygame
 import moving_strategies_class
 import enemy_class
 import player as sprites
@@ -6,9 +7,9 @@ import patrol_route
 import notmoving_class
 
 def create_movement_strategies():
-    move_stratagyA = moving_strategies_class.MovingStrategyA()
-    move_stratagyB = moving_strategies_class.MovingStrategyB()
-    return move_stratagyA, move_stratagyB
+    move_strategyA = moving_strategies_class.MovingStrategyA()
+    move_strategyB = moving_strategies_class.MovingStrategyB()
+    return move_strategyA, move_strategyB
 
 def create_player(strategy):
     player = sprites.Player(1100, 600, 100, 0, 5, (50, 90))
@@ -33,17 +34,25 @@ def create_enemies(strategy):
     return enemies
 
 def create_interface_elements():
-    pause = notmoving_class.Picture("pictures_and_sounds/pause.png", 1150, 0, (50, 50))
-    continue_b = notmoving_class.Picture("pictures_and_sounds/cont.png", 2000, 0, (100, 100))
-    retry = notmoving_class.Picture("pictures_and_sounds/retry.png", 2000, 620, (200, 80))
-    menu_bar = notmoving_class.Picture("pictures_and_sounds/Menu_bar.png", 2000, 0, (500, 700))
-    volum_plus = notmoving_class.Picture("pictures_and_sounds/+.png", 2000, 0, (100, 100))
-    volume_minus = notmoving_class.Picture("pictures_and_sounds/-.png", 2000, 0, (100, 100))
+    pause = notmoving_class.NotMoving("pictures_and_sounds/pause.png", 1150, 0, (50, 50))
+    continue_b = notmoving_class.NotMoving("pictures_and_sounds/cont.png", 2000, 0, (100, 100))
+    retry = notmoving_class.NotMoving("pictures_and_sounds/retry.png", 2000, 620, (200, 80))
+    menu_bar = notmoving_class.NotMoving("pictures_and_sounds/Menu_bar.png", 2000, 0, (500, 700))
+    volum_plus = notmoving_class.NotMoving("pictures_and_sounds/+.png", 2000, 0, (100, 100))
+    volume_minus = notmoving_class.NotMoving("pictures_and_sounds/-.png", 2000, 0, (100, 100))
     volume_proc = notmoving_class.TextArea(2000, 2000, 90, 40, (0, 0, 0))
-    fail = notmoving_class.Picture("pictures_and_sounds/Fail_picture.png", 0, 0, (1200, 700))
+    fail = notmoving_class.NotMoving("pictures_and_sounds/Fail_picture.png", 0, 0, (1200, 700))
     points = notmoving_class.TextArea(0, 0, 0, 0, (0, 0, 0))
     beg_scene = notmoving_class.NotMoving("pictures_and_sounds/Tanks_fon.jpg", 0, 0, (1200, 700))
     game_back_ground = notmoving_class.NotMoving("pictures_and_sounds/background.jpg", 0, 0, (1200, 700))
     return pause, continue_b, retry, menu_bar, volum_plus, volume_minus, volume_proc, fail, points, beg_scene, game_back_ground
 
-    
+def create_explosion_animation():
+    exp = [pygame.image.load('pictures_and_sounds/Boom1.png'), 
+           pygame.image.load('pictures_and_sounds/Boom2.png'), 
+           pygame.image.load('pictures_and_sounds/Boom3.png'), 
+           pygame.image.load('pictures_and_sounds/Boom4.png'), 
+           pygame.image.load('pictures_and_sounds/Boom5.png'), 
+           pygame.image.load('pictures_and_sounds/Boom6.png')]
+    explosions = pygame.sprite.Group()
+    return exp, explosions

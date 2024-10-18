@@ -14,6 +14,7 @@ class Player(sprite.Sprite, entity.Entity):
         self.diraction = None
         self.size = size
         self.strategy = None
+        self.allow_rotate = True
 
     def reset(self, window):
         window.blit(self.image, (self.rect.x, self.rect.y))
@@ -41,7 +42,8 @@ class Player(sprite.Sprite, entity.Entity):
             self.strategy.move(self)
         if not self.allowed_move(walls):
             self.rect = prev_pos
-        self.rotate_image()
+        if self.allow_rotate == True:
+            self.rotate_image()
 
     def take_damage(self, amount, game):
         self.hp -= amount

@@ -8,16 +8,17 @@ import player as player_class
 import window as settings
 import map
 import game_objects as go
+import explosion_class
 mixer.init()
-
 class Game: #Клас головного контрллера
     def __init__(self) -> None:
         self.game = False
         self.intro = True
         self.ending = False
         self.bullet_timer = 100
-        self.volume = 1
-        self.proc = 100
+        self.volume = 0.1
+        self.proc = 10
+        self.replay_opened = False
     def mp3player(self, music, volume):#Програвач музики
         mixer.init()
         mixer.music.load(music)
@@ -62,7 +63,10 @@ class Game: #Клас головного контрллера
         bullets.draw(settings.window)
         bullets_enemy.update()  
         bullets_enemy.draw(settings.window)
-        pause.reset()
+        explosions.update()  # Оновлюємо всі вибухи
+        explosions.draw(settings.window)
+        if self.replay_opened == False:
+            pause.reset()
         menu_bar.reset()
         continue_b.reset()  
         volum_plus.reset()
@@ -75,17 +79,19 @@ class Game: #Клас головного контрллера
         if e.type == MOUSEBUTTONDOWN:  # при натисканні на кнопки
             x, y = e.pos
             if pause.rect.collidepoint(x, y):
-                self.stop_all(player, enemies, bullets, bullets_enemy)
-                menu_bar.rect.x = 700  # повернення на позицію, яку бачить гравець
-                menu_bar.rect.y = 0
-                continue_b.rect.x = 900
-                continue_b.rect.y = 500
-                volume_minus.rect.x = 750
-                volume_minus.rect.y = 350
-                volum_plus.rect.x = 1050
-                volum_plus.rect.y = 350
-                volume_proc.rect.x = 890
-                volume_proc.rect.y = 350
+                if self.replay_opened == False:
+                    self.stop_all(player, enemies, bullets, bullets_enemy)
+                    menu_bar.rect.x = 700  # повернення на позицію, яку бачить гравець
+                    menu_bar.rect.y = 0
+                    continue_b.rect.x = 900
+                    continue_b.rect.y = 500
+                    volume_minus.rect.x = 750
+                    volume_minus.rect.y = 350
+                    volum_plus.rect.x = 1050
+                    volum_plus.rect.y = 350
+                    volume_proc.rect.x = 890
+                    volume_proc.rect.y = 350
+                    player.allow_rotate = False
 
             if continue_b.rect.collidepoint(x, y):
                 self.stop_all(player, enemies, bullets, bullets_enemy)   
@@ -100,6 +106,11 @@ class Game: #Клас головного контрллера
                 volume_proc.rect.x = 2000
                 volume_proc.rect.y = 2000
                 player.speed = 5
+                player.allow_rotate = True
+                for i in bullets:
+                    i.allowed_shooting = True
+                for j in bullets_enemy:
+                    j.allowed_shooting = True
                 for i in enemies:
                     i.speed = 2
                 for i in bullets:
@@ -119,6 +130,7 @@ class Game: #Клас головного контрллера
                     self.proc = int(self.volume * 100)  
                     mixer.music.set_volume(self.volume)
             if retry.rect.collidepoint(x, y): #спробувати ще раз
+                self.replay_opened = False
                 for i in enemies:
                     i.moved_home()
                     i.speed = 2
@@ -132,6 +144,7 @@ class Game: #Клас головного контрллера
                 retry.rect.x = 2000
                 player.speed = 5
                 player.score = 0
+                player.allow_rotate = True
     def bullets_collision(self):#перевірка для колізії
         for bullet in bullets:
             for enemy in enemies:
@@ -139,13 +152,15 @@ class Game: #Клас головного контрллера
                     player.add_score(100)                
                     enemy.moved_home()  
                     enemy.speed += 0.25
-                    mixer.init()
-                    mixer.music.load('pictures_and_sounds/babach.mp3')
-                    mixer.music.set_volume(self.volume)
-                    mixer.music.play(0)
-                    explosion = notmoving_class.Picture("pictures_and_sounds/Buch.png", bullet.rect.x, bullet.rect.y, (100, 150))
-                    explosion.reset()
+                    game.mp3player("pictures_and_sounds/babach.mp3", self.volume)
+                    explosion = explosion_class.Explosion(bullet.rect.x, bullet.rect.y, exp)  # Використовуйте кадри анімації
+                    explosions.add(explosion)
                     bullet.kill()
+                    self.replay_opened == True
+                    for i in bullets:
+                        i.allowed_shooting = False
+                    for j in bullets_enemy:
+                        j.allowed_shooting = False
             for wall in map.walls:
                 if bullet.rect.colliderect(wall.rect):
                     bullet.kill()
@@ -187,12 +202,9 @@ class Collision(): #перевірка колізії для гравця
         if sprite.spritecollide(player, target_list, False):
             game.stop_all(player, enemies, bullets, bullets_enemy)
             if menu_bar.rect.x != 700:
-                mixer.init()
-                mixer.music.load('pictures_and_sounds/babach.mp3')
-                mixer.music.set_volume(game.volume)
-                mixer.music.play(0)
-                explosion = notmoving_class.Picture("pictures_and_sounds/Buch.png", player.rect.x, player.rect.y, (100, 150))
-                explosion.reset()
+                explosion = explosion_class.Explosion(player.rect.x, player.rect.y, exp)
+                explosions.add(explosion)
+                game.replay_opened = True
                 for bullet in bullets:
                     bullet.speed = 0
                     bullet.kill()
@@ -204,6 +216,11 @@ class Collision(): #перевірка колізії для гравця
             fail.rect.x = 0
             fail.reset()
             retry.reset()
+            player.allow_rotate = False
+            for i in bullets:
+                i.allowed_shooting = False
+            for j in bullets_enemy:
+                j.allowed_shooting = False
             return True
         else:
             return False  
@@ -223,6 +240,7 @@ enemies = go.create_enemies(move_stratagyA)
 
 pause, continue_b, retry, menu_bar, volum_plus, volume_minus, volume_proc, fail, points, beg_scene, game_back_ground = go.create_interface_elements()
 
+exp, explosions = go.create_explosion_animation()
 if __name__ == "__main__":
     game = Game()
     game.mp3player("pictures_and_sounds/War.mp3", game.volume)
